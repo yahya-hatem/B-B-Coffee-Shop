@@ -1,16 +1,34 @@
-# React + Vite
+# ☕ B&B Coffee Shop
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A modern coffee shop website built with ReactJS and Vite.
 
-Currently, two official plugins are available:
+## 🚀 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Reusable React Components
+- Props
+- Ternary Operator
+- && Operator
+- Dynamic rendering using .map()
+- Coffee menu with prices and sizes
+- Best Seller products
+- Shopping Cart
+- Customer Reviews
+- Star Ratings
+- Feedback Form
+- Founder/About section
+- Responsive and clean UI
 
-## React Compiler
+## 🛠️ Technologies
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- ReactJS
+- Vite
+- JavaScript
+- CSS
 
-## Expanding the Oxlint configuration
+## 🌐 Live Demo
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+[Visit B&B Coffee Shop](https://b-b-coffee-shop.vercel.app/)
+
+## 📂 GitHub Repository
+
+[View Source Code](YOUR_GITHUB_LINK)
