@@ -1,4 +1,16 @@
 function Founder() {
+  const founderNameStyle = {
+    color: "#5b3826",
+    fontSize: "36px",
+    marginBottom: "5px",
+  };
+
+  const founderRoleStyle = {
+    color: "#9a5a31",
+    fontWeight: "bold",
+    marginBottom: "18px",
+  };
+
   return (
     <section className="founder-section" id="about">
       <div className="founder-avatar">
@@ -10,17 +22,17 @@ function Founder() {
           MEET THE FOUNDER
         </span>
 
-        <h2>
+        <h2 style={founderNameStyle}>
           YAHYA HATEM
         </h2>
 
-        <h3>
-          Founder & React Developer $FullStack Developer
+        <h3 style={founderRoleStyle}>
+          Founder & React Developer
         </h3>
 
         <p>
-          B&B was created as a modern coffee
-          shop experience that combines great coffee
+          B&B was created as a modern coffee shop
+          experience that combines great coffee
           with clean and simple technology.
         </p>
 

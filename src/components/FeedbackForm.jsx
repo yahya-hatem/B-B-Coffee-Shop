@@ -6,34 +6,57 @@ function FeedbackForm({ onAddReview }) {
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submittedName, setSubmittedName] = useState("");
+  const [submitError, setSubmitError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!name || !phone || !rating || !feedback) {
+    const trimmedName = name.trim();
+    const trimmedPhone = phone.trim();
+    const trimmedFeedback = feedback.trim();
+
+    if (
+      !trimmedName ||
+      !trimmedPhone ||
+      !rating ||
+      !trimmedFeedback
+    ) {
       alert("Please complete all fields and choose a rating.");
       return;
     }
 
-    const newReview = {
-      id: Date.now(),
-      name: name,
-      phone: phone,
-      rating: rating,
-      feedback: feedback,
-    };
+    setIsSubmitting(true);
+    setSubmitted(false);
+    setSubmitError("");
 
-    onAddReview(newReview);
+    try {
+      await onAddReview({
+        name: trimmedName,
+        phone: trimmedPhone,
+        rating,
+        feedback: trimmedFeedback,
+      });
 
-    setName("");
-    setPhone("");
-    setRating(0);
-    setFeedback("");
-    setSubmitted(true);
+      setSubmittedName(trimmedName);
+      setName("");
+      setPhone("");
+      setRating(0);
+      setFeedback("");
+      setSubmitted(true);
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
+      setSubmitError(
+        "Could not submit your feedback right now. Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <section className="feedback-section" id="reviews">
+    <section className="feedback-section" id="feedback">
       <div className="feedback-heading">
         <span className="section-tag">
           CUSTOMER REVIEWS
@@ -59,6 +82,7 @@ function FeedbackForm({ onAddReview }) {
               type="text"
               placeholder="Enter your name"
               value={name}
+              disabled={isSubmitting}
               onChange={(event) =>
                 setName(event.target.value)
               }
@@ -72,6 +96,7 @@ function FeedbackForm({ onAddReview }) {
               type="tel"
               placeholder="01xxxxxxxxx"
               value={phone}
+              disabled={isSubmitting}
               onChange={(event) =>
                 setPhone(event.target.value)
               }
@@ -92,6 +117,7 @@ function FeedbackForm({ onAddReview }) {
                     ? "star selected"
                     : "star"
                 }
+                disabled={isSubmitting}
                 onClick={() => setRating(star)}
               >
                 ★
@@ -113,6 +139,7 @@ function FeedbackForm({ onAddReview }) {
             placeholder="Write your feedback here..."
             rows="5"
             value={feedback}
+            disabled={isSubmitting}
             onChange={(event) =>
               setFeedback(event.target.value)
             }
@@ -122,13 +149,20 @@ function FeedbackForm({ onAddReview }) {
         <button
           type="submit"
           className="submit-button"
+          disabled={isSubmitting}
         >
-          Submit Feedback
+          {isSubmitting ? "Submitting..." : "Submit Feedback"}
         </button>
+
+        {submitError && (
+          <div className="error-message">
+            {submitError}
+          </div>
+        )}
 
         {submitted && (
           <div className="success-message">
-            ✅ Thank you, {name || "Customer"}!
+            ✅ Thank you, {submittedName || "Customer"}!
             Your feedback has been submitted successfully.
           </div>
         )}

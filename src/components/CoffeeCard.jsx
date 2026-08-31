@@ -1,20 +1,22 @@
+import styles from "./CoffeeCard.module.css";
+
 function CoffeeCard({ coffee, onAddToCart }) {
   return (
-    <article className="coffee-card">
-      <div className="coffee-image">
-        <span className="coffee-emoji">
+    <article className={styles.card}>
+      <div className={styles.image}>
+        <span className={styles.emoji}>
           {coffee.image}
         </span>
 
         {coffee.bestSeller && (
-          <span className="best-seller">
+          <span className={styles.badge}>
             ⭐ Best Seller
           </span>
         )}
       </div>
 
-      <div className="coffee-details">
-        <div className="coffee-title">
+      <div className={styles.details}>
+        <div className={styles.title}>
           <h3>{coffee.name}</h3>
 
           <span className="rating">
@@ -22,16 +24,16 @@ function CoffeeCard({ coffee, onAddToCart }) {
           </span>
         </div>
 
-        <p className="category">
+        <p className={styles.category}>
           {coffee.category}
         </p>
 
-        <div className="coffee-info">
+        <div className={styles.info}>
           <span>
             Size: {coffee.size}
           </span>
 
-          <strong>
+          <strong className={styles.price}>
             {coffee.price} EGP
           </strong>
         </div>
@@ -39,7 +41,7 @@ function CoffeeCard({ coffee, onAddToCart }) {
         <button
           className={
             coffee.available
-              ? "add-button"
+              ? styles.button
               : "sold-button"
           }
           disabled={!coffee.available}

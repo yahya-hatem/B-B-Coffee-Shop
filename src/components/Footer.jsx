@@ -2,7 +2,7 @@ function Footer() {
   return (
     <footer className="footer">
       <div>
-   <h3>☕ B&B</h3>
+        <h3>☕ B&B</h3>
 
         <p>
           Making every coffee moment special.
@@ -13,6 +13,7 @@ function Footer() {
         <a href="#home">Home</a>
         <a href="#menu">Menu</a>
         <a href="#about">About</a>
+        <a href="#feedback">Feedback</a>
         <a href="#reviews">Reviews</a>
       </div>
 

@@ -468,11 +468,29 @@ nav a:hover {
   background: #74492f;
 }
 
+.submit-button:disabled,
+.form-group input:disabled,
+.form-group textarea:disabled,
+.star:disabled {
+  cursor: wait;
+  opacity: 0.75;
+}
+
 .success-message {
   margin-top: 18px;
   padding: 14px;
   background: #e8f7ec;
   color: #23753a;
+  border-radius: 9px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.error-message {
+  margin-top: 18px;
+  padding: 14px;
+  background: #fdebea;
+  color: #a5312a;
   border-radius: 9px;
   text-align: center;
   font-weight: bold;
@@ -484,6 +502,7 @@ nav a:hover {
   width: 84%;
   max-width: 1150px;
   margin: 90px auto;
+  scroll-margin-top: 90px;
 }
 
 .section-heading {
