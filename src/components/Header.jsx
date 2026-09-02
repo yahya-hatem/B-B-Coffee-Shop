@@ -1,20 +1,88 @@
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import CartBadge from "./CartBadge";
 
 function Header({ cartCount, onCartClick }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const goToSection = (sectionId) => {
+    if (location.pathname !== "/") {
+      navigate("/");
+      
+      setTimeout(() => {
+        document
+          .getElementById(sectionId)
+          ?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+      }, 100);
+    } else {
+      document
+        .getElementById(sectionId)
+        ?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+    }
+  };
+
   return (
     <header className="header">
       <div className="container-fluid px-4">
         <div className="d-flex align-items-center justify-content-between">
-          <a href="#home" className="logo">
-            ☕ <span>B&B</span>
-          </a>
 
-          <nav className="d-none d-md-flex gap-4">
-            <a href="#home">Home</a>
-            <a href="#menu">Menu</a>
-            <a href="#about">About</a>
-            <a href="#feedback">Feedback</a>
-            <a href="#reviews">Reviews</a>
+          <NavLink to="/" className="logo">
+            ☕ <span>B&B</span>
+          </NavLink>
+
+          <nav className="d-none d-md-flex gap-4 align-items-center">
+
+            <NavLink
+              to="/"
+              className="text-decoration-none"
+            >
+              Home
+            </NavLink>
+
+            <button
+              type="button"
+              className="nav-section-link"
+              onClick={() => goToSection("menu")}
+            >
+              Menu
+            </button>
+
+            <NavLink
+              to="/about"
+              className="text-decoration-none"
+            >
+              About
+            </NavLink>
+
+            <NavLink
+              to="/contact"
+              className="text-decoration-none"
+            >
+              Contact
+            </NavLink>
+
+            <button
+              type="button"
+              className="nav-section-link"
+              onClick={() => goToSection("feedback")}
+            >
+              Feedback
+            </button>
+
+            <button
+              type="button"
+              className="nav-section-link"
+              onClick={() => goToSection("reviews")}
+            >
+              Reviews
+            </button>
+
           </nav>
 
           <button
@@ -24,6 +92,7 @@ function Header({ cartCount, onCartClick }) {
             🛒 Cart
             <CartBadge count={cartCount} />
           </button>
+
         </div>
       </div>
     </header>

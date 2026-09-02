@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
 import {
+  BrowserRouter,
+  Routes,
+  Route,
+} from "react-router-dom";
+
+import {
   addDoc,
   collection,
   onSnapshot,
@@ -9,14 +15,13 @@ import {
 } from "firebase/firestore";
 
 import Header from "./components/Header";
-import Hero from "./components/Hero";
-import CoffeeCard from "./components/CoffeeCard";
-import FeedbackForm from "./components/FeedbackForm";
-import ReviewCard from "./components/ReviewCard";
-import Founder from "./components/Founder";
 import Footer from "./components/Footer";
 
-import { coffees } from "./data/coffees";
+import Home from "./pages/Home";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
+import NotFound from "./pages/NotFound";
+
 import useLocalStorage from "./components/hooks/useLocalStorage";
 import { db } from "./firebase";
 
@@ -27,6 +32,7 @@ function App() {
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [reviewsError, setReviewsError] = useState("");
 
+  // Load reviews from Firebase
   useEffect(() => {
     const reviewsQuery = query(
       collection(db, "reviews"),
@@ -47,9 +53,11 @@ function App() {
       },
       (error) => {
         console.error("Error loading reviews:", error);
+
         setReviewsError(
           "Could not load reviews right now. Please try again later."
         );
+
         setReviewsLoading(false);
       }
     );
@@ -57,14 +65,14 @@ function App() {
     return unsubscribe;
   }, []);
 
+  // Add coffee to cart
   const addToCart = (coffee) => {
     setCart([...cart, coffee]);
 
-    alert(
-      `${coffee.name} has been added to your cart! ☕`
-    );
+    alert(`${coffee.name} has been added to your cart! ☕`);
   };
 
+  // Show shopping cart
   const showCart = () => {
     if (cart.length === 0) {
       alert("Your cart is empty ☕");
@@ -88,6 +96,7 @@ function App() {
     );
   };
 
+  // Add review to Firebase
   const addReview = async (newReview) => {
     await addDoc(collection(db, "reviews"), {
       name: newReview.name.trim(),
@@ -99,104 +108,48 @@ function App() {
   };
 
   return (
-    <div className="app">
-      <Header
-        cartCount={cart.length}
-        onCartClick={showCart}
-      />
+    <BrowserRouter>
+      <div className="app">
 
-      <Hero />
+        <Header
+          cartCount={cart.length}
+          onCartClick={showCart}
+        />
 
-      <main>
-        <section
-          className="container menu-section"
-          id="menu"
-        >
-          <div className="menu-header">
-            <div>
-              <span className="section-tag">
-                OUR MENU
-              </span>
-
-              <h2>Choose Your Favorite</h2>
-
-              <p>
-                Discover our selection of freshly
-                prepared coffee and drinks.
-              </p>
-            </div>
-
-            <div className="menu-count">
-              {coffees.length} Drinks
-            </div>
-          </div>
-
-          <section className="coffee-grid">
-            {coffees.map((coffee) => (
-              <CoffeeCard
-                key={coffee.id}
-                coffee={coffee}
-                onAddToCart={addToCart}
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <Home
+                addToCart={addToCart}
+                addReview={addReview}
+                reviews={reviews}
+                reviewsLoading={reviewsLoading}
+                reviewsError={reviewsError}
               />
-            ))}
-          </section>
+            }
+          />
 
-          {coffees.length > 0 && (
-            <div className="menu-message">
-              ☕ Fresh coffee is waiting for you!
-            </div>
-          )}
-        </section>
+          <Route
+            path="/about"
+            element={<About />}
+          />
 
-        <Founder />
+          <Route
+            path="/contact"
+            element={<Contact />}
+          />
 
-        <FeedbackForm onAddReview={addReview} />
+          <Route
+            path="*"
+            element={<NotFound />}
+          />
+        </Routes>
 
-        <section
-          className="reviews-list-section"
-          id="reviews"
-        >
-          <div className="section-heading">
-            <span className="section-tag">
-              WHAT OUR CUSTOMERS SAY
-            </span>
+        <Footer />
 
-            <h2>Customer Reviews</h2>
-          </div>
-
-          {reviewsError ? (
-            <p className="review-count">
-              {reviewsError}
-            </p>
-          ) : reviewsLoading ? (
-            <p className="review-count">
-              Loading customer reviews... ☕
-            </p>
-          ) : reviews.length > 0 ? (
-            <div className="reviews-grid">
-              {reviews.map((review) => (
-                <ReviewCard
-                  key={review.id}
-                  review={review}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="review-count">
-              No reviews yet. Be the first to leave a review! ⭐
-            </p>
-          )}
-
-          {reviews.length > 0 && (
-            <p className="review-count">
-              ❤️ {reviews.length} customer reviews
-            </p>
-          )}
-        </section>
-      </main>
-
-      <Footer />
-    </div>
+      </div>
+    </BrowserRouter>
   );
 }
 
