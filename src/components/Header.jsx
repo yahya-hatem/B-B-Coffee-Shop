@@ -1,5 +1,6 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import CartBadge from "./CartBadge";
+import ThemeToggle from "./ThemeToggle";
 
 function Header({ cartCount, onCartClick }) {
   const navigate = useNavigate();
@@ -52,6 +53,7 @@ function Header({ cartCount, onCartClick }) {
             >
               Menu
             </button>
+            <ThemeToggle />
 
             <NavLink
               to="/about"

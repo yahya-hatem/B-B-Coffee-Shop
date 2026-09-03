@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   BrowserRouter,
   Routes,
@@ -16,17 +17,22 @@ import {
 
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import CartPanel from "./components/CartPanel";
 
 import Home from "./pages/Home";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 
-import useLocalStorage from "./components/hooks/useLocalStorage";
+import { addItem } from "./redux/slices/cartSlice";
 import { db } from "./firebase";
+import { useTheme } from "./context/useTheme";
 
 function App() {
-  const [cart, setCart] = useLocalStorage("bb-cart", []);
+  const { theme } = useTheme();
+  const dispatch = useDispatch();
+  const cart = useSelector((state) => state.cart.items);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
@@ -67,33 +73,13 @@ function App() {
 
   // Add coffee to cart
   const addToCart = (coffee) => {
-    setCart([...cart, coffee]);
+    dispatch(addItem(coffee));
 
     alert(`${coffee.name} has been added to your cart! ☕`);
   };
 
-  // Show shopping cart
   const showCart = () => {
-    if (cart.length === 0) {
-      alert("Your cart is empty ☕");
-      return;
-    }
-
-    const items = cart
-      .map(
-        (item) =>
-          `• ${item.name} - ${item.price} EGP`
-      )
-      .join("\n");
-
-    const total = cart.reduce(
-      (sum, item) => sum + item.price,
-      0
-    );
-
-    alert(
-      `Your Cart 🛒\n\n${items}\n\nTotal: ${total} EGP`
-    );
+    setIsCartOpen((isOpen) => !isOpen);
   };
 
   // Add review to Firebase
@@ -109,12 +95,13 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="app">
+      <div className={`app theme-${theme}`}>
 
         <Header
           cartCount={cart.length}
           onCartClick={showCart}
         />
+        {isCartOpen && <CartPanel onClose={() => setIsCartOpen(false)} />}
 
         <Routes>
           <Route
