@@ -31,10 +31,13 @@ function Contact() {
     setIsSubmitting(true);
 
     try {
-      await axios.post(
-        "https://jsonplaceholder.typicode.com/posts",
-        values
-      );
+      const safeValues = {
+        fullName: values.fullName,
+        email: values.email,
+        phone: values.phone,
+        message: values.message,
+      };
+      await axios.post("https://jsonplaceholder.typicode.com/posts", safeValues);
 
       setSuccess(true);
     } catch (error) {
