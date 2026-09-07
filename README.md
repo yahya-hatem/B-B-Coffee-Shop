@@ -2,7 +2,7 @@
 
 A modern and responsive coffee shop web application built with **ReactJS and Vite**.
 
-The project was developed through multiple phases, starting with reusable React components and dynamic rendering, then adding state management, custom hooks, Firebase integration, React Router, forms, and API requests.
+The project was developed through multiple phases, starting with React fundamentals and reusable components, then adding hooks, state management, Firebase integration, React Router, forms, API requests, Context API, and Redux Toolkit.
 
 ---
 
@@ -18,9 +18,9 @@ https://github.com/yahya-hatem/B-B-Coffee-Shop
 
 ---
 
-## 🚀 Features
+# 🚀 Features
 
-### ☕ Coffee Shop Features
+## ☕ Coffee Shop Features
 
 - Modern and responsive coffee shop UI
 - Coffee menu with prices and sizes
@@ -28,13 +28,17 @@ https://github.com/yahya-hatem/B-B-Coffee-Shop
 - Reusable Coffee Cards
 - Shopping Cart
 - Cart item counter
+- Add and remove products from cart
+- Clear cart
 - Customer Reviews
 - Star Ratings
 - Feedback Form
 - Founder/About section
 - Responsive design for different screen sizes
 
-### ⚛️ React Features
+---
+
+## ⚛️ React Features
 
 - Functional React Components
 - Reusable Components
@@ -42,6 +46,7 @@ https://github.com/yahya-hatem/B-B-Coffee-Shop
 - React State Management
 - `useState`
 - `useEffect`
+- `useContext`
 - Conditional Rendering
 - Ternary Operator
 - `&&` Operator
@@ -49,11 +54,13 @@ https://github.com/yahya-hatem/B-B-Coffee-Shop
 - Controlled Forms
 - Custom Hooks
 
-### 🧭 React Router
+---
 
-The application uses **React Router DOM** for multiple pages.
+# 🧭 React Router
 
-Available routes:
+The application uses **React Router DOM** to provide multiple pages and client-side navigation.
+
+### Available Routes
 
 - `/` → Home
 - `/about` → About
@@ -62,7 +69,9 @@ Available routes:
 
 The navigation bar allows users to move between pages without refreshing the application.
 
-### 📝 Contact Form
+---
+
+# 📝 Contact Form
 
 The Contact page includes a complete form with:
 
@@ -72,7 +81,7 @@ The Contact page includes a complete form with:
 - Phone Number
 - Message
 
-Features include:
+### Form Features
 
 - React state management
 - Controlled inputs
@@ -84,11 +93,13 @@ Features include:
 - Error handling
 - Submit without page refresh
 
-### 🔌 Axios API
+---
+
+# 🔌 Axios API
 
 Axios is used to send form data to a test API.
 
-API used:
+### API
 
 `https://jsonplaceholder.typicode.com/posts`
 
@@ -99,11 +110,13 @@ The application handles:
 - Successful submission
 - Request errors
 
-### 🔥 Firebase
+---
+
+# 🔥 Firebase
 
 Firebase Firestore is used to store customer reviews.
 
-Features include:
+### Firebase Features
 
 - Add customer reviews
 - Store reviews in Firestore
@@ -112,14 +125,15 @@ Features include:
 - Star ratings
 - Customer feedback persistence
 
-### 🪝 Custom Hooks
+---
 
-The project includes reusable custom hooks such as:
+# 🪝 Custom Hooks
 
-- `useForm`
-- `useLocalStorage`
+The project includes reusable custom hooks.
 
-`useForm` manages:
+### `useForm`
+
+Manages:
 
 - Form values
 - Input changes
@@ -128,39 +142,54 @@ The project includes reusable custom hooks such as:
 - Submission state
 - Success state
 
-`useLocalStorage` is used to persist the shopping cart in the browser.
+### `useLocalStorage`
+
+Provides reusable Local Storage functionality for browser-based data persistence.
 
 ---
 
-## 🛠️ Technologies
+# 🎨 Context API
 
-### Frontend
+Context API is used to manage the application's global **Theme State**.
 
-- ReactJS
-- JavaScript
-- Vite
-- HTML5
-- CSS3
+### Theme Features
 
-### Libraries
+- Light Mode ☀️
+- Dark Mode 🌙
+- Global theme state
+- Theme switching without prop drilling
 
-- React Router DOM
-- Axios
-- Firebase
-- Bootstrap
+The `ThemeContext` provides the theme state and theme toggle function to multiple components.
 
-### Development Tools
+🛠️ Technologies
 
-- Git
-- GitHub
-- Vercel
-- VS Code
+Frontend
 
----
+* ReactJS
+* JavaScript
+* Vite
+* HTML5
+* CSS3
 
-## 📁 Project Structure
+Libraries
 
-```text
+* React Router DOM
+* Redux Toolkit
+* React Redux
+* Axios
+* Firebase
+* Bootstrap
+
+Development Tools
+
+* Git
+* GitHub
+* Vercel
+* VS Code
+
+📁 Project Structure
+
+### Context Structure
 B-B-Coffee-Shop/
 │
 ├── public/
@@ -168,6 +197,7 @@ B-B-Coffee-Shop/
 ├── src/
 │   │
 │   ├── components/
+│   │   ├── CartPanel.jsx
 │   │   ├── CoffeeCard.jsx
 │   │   ├── FeedbackForm.jsx
 │   │   ├── Footer.jsx
@@ -175,8 +205,21 @@ B-B-Coffee-Shop/
 │   │   ├── Header.jsx
 │   │   ├── Hero.jsx
 │   │   ├── ReviewCard.jsx
+│   │   ├── ThemeToggle.jsx
+│   │   │
 │   │   └── hooks/
 │   │       └── useLocalStorage.jsx
+│   │
+│   ├── context/
+│   │   ├── ThemeContext.jsx
+│   │   ├── themeContext.js
+│   │   └── useTheme.js
+│   │
+│   ├── redux/
+│   │   ├── store.js
+│   │   │
+│   │   └── slices/
+│   │       └── cartSlice.js
 │   │
 │   ├── pages/
 │   │   ├── Home.jsx
@@ -199,3 +242,128 @@ B-B-Coffee-Shop/
 ├── package.json
 ├── package-lock.json
 └── README.md
+
+🏗️ Application Architecture:
+                    B&B Coffee Shop
+                           │
+             ┌─────────────┴─────────────┐
+             │                           │
+        Context API                   Redux
+             │                           │
+           Theme                       Cart
+             │                           │
+       Light / Dark              Add / Remove / Clear
+             │                           │
+             └─────────────┬─────────────┘
+                           │
+                        React App
+                           │
+        ┌──────────────────┼──────────────────┐
+        │                  │                  │
+       Home              About             Contact
+        │                                     │
+   Coffee Menu                         Contact Form
+   Reviews                              Axios API
+   Feedback
+
+
+   📚 Project Development Phases
+
+Phase 1 — React Fundamentals
+
+* ReactJS fundamentals
+* Components
+* Props
+* Conditional rendering
+* Ternary Operator
+* && Operator
+* .map()
+* Coffee menu
+* Product cards
+* Responsive UI
+
+⸻
+
+Phase 2 — Hooks and Firebase
+
+* React Hooks
+* useState
+* useEffect
+* Custom Hooks
+* Shopping Cart
+* Local Storage
+* Customer Reviews
+* Firebase Firestore
+* Bootstrap
+* Multiple styling approaches
+* Responsive design
+
+⸻
+
+Phase 3 — Routing, Forms and APIs
+
+* React Router DOM
+* Multiple pages
+* Navigation
+* Contact Form
+* Form validation
+* Custom useForm hook
+* Axios API requests
+* Loading state
+* Error handling
+* 404 Not Found page
+* Vercel deployment
+
+⸻
+
+Phase 4 — Context API and Redux
+
+* Context API
+* Context Provider
+* useContext
+* Global Theme State
+* Light / Dark Mode
+* Redux Toolkit
+* React Redux
+* Redux Store
+* Redux Slice
+* Redux Reducers
+* useSelector
+* useDispatch
+* Global Shopping Cart
+* Add / Remove / Clear Cart
+* Separation of Context and Redux state
+
+
+```text
+ThemeProvider
+      │
+      ├── Header
+      │
+      ├── ThemeToggle
+      │
+      └── Application Components
+
+🛒 Redux Toolkit
+
+Redux Toolkit is used to manage the application’s global Shopping Cart State.
+
+Redux Features
+
+* Global shopping cart state
+* Add products to cart
+* Remove products from cart
+* Clear cart
+* Cart item count
+* Redux reducers
+* useSelector
+* useDispatch
+
+Redux Structure
+Redux Store
+     │
+     └── Cart Slice
+           │
+           ├── addToCart
+           ├── removeFromCart
+           └── clearCart
