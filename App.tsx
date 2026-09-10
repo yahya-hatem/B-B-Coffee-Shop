@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {ReactNode, useEffect, useMemo, useState} from 'react';
 
 import {
   Alert,
@@ -11,7 +11,6 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 
@@ -24,162 +23,49 @@ import {
 
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 
-type Category =
-  | 'Hot Coffee'
-  | 'Cold Coffee'
-  | 'Special Coffee';
-
-type Coffee = {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  category: Category;
-  image: any;
-};
-
-type Review = {
-  id: string;
-  name: string;
-  rating: number;
-  text: string;
-};
+import {CartItem as CartListItem} from './src/components/CartItem';
+import {CoffeeCard} from './src/components/CoffeeCard';
+import {CustomButton} from './src/components/CustomButton';
+import {CustomInput} from './src/components/CustomInput';
+import {Loading} from './src/components/Loading';
+import {ThemeProvider} from './src/context/ThemeContext';
+import {IMAGES, INITIAL_COFFEES, REVIEWS} from './src/data/initialData';
+import {useTheme} from './src/hooks/useTheme';
+import api from './src/services/api';
+import type {CartItem, Category, Coffee} from './src/types';
 
 const Tab = createBottomTabNavigator();
 
 /* =====================================================
-   LOCAL IMAGES
+   REUSABLE SECTION
+   children PROP
 ===================================================== */
 
-const IMAGES = {
-  hero: require('./assets/hero.png'),
+function Section({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  children: ReactNode;
+}) {
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>
+        {title}
+      </Text>
 
-  espresso: require('./assets/espresso.png'),
-  cappuccino: require('./assets/cappuccino.png'),
-  latte: require('./assets/latte.png'),
-  americano: require('./assets/americano.png'),
+      {subtitle && (
+        <Text style={styles.sectionSubtitle}>
+          {subtitle}
+        </Text>
+      )}
 
-  icedLatte: require('./assets/iced-latte.png'),
-  icedMocha: require('./assets/iced-mocha.png'),
-  coldBrew: require('./assets/cold-brew.png'),
-
-  mocha: require('./assets/mocha.png'),
-};
-
-/* =====================================================
-   INITIAL COFFEE DATA
-===================================================== */
-
-const INITIAL_COFFEES: Coffee[] = [
-  {
-    id: '1',
-    name: 'Espresso',
-    description:
-      'Strong and rich espresso made from premium coffee beans.',
-    price: 3.5,
-    category: 'Hot Coffee',
-    image: IMAGES.espresso,
-  },
-
-  {
-    id: '2',
-    name: 'Cappuccino',
-    description:
-      'Rich espresso with creamy milk foam.',
-    price: 4.5,
-    category: 'Hot Coffee',
-    image: IMAGES.cappuccino,
-  },
-
-  {
-    id: '3',
-    name: 'Caffè Latte',
-    description:
-      'Smooth espresso blended with warm steamed milk.',
-    price: 5,
-    category: 'Hot Coffee',
-    image: IMAGES.latte,
-  },
-
-  {
-    id: '4',
-    name: 'Americano',
-    description:
-      'Classic espresso with hot water for a smooth taste.',
-    price: 3.8,
-    category: 'Hot Coffee',
-    image: IMAGES.americano,
-  },
-
-  {
-    id: '5',
-    name: 'Iced Latte',
-    description:
-      'Cold espresso with milk and refreshing ice.',
-    price: 5.2,
-    category: 'Cold Coffee',
-    image: IMAGES.icedLatte,
-  },
-
-  {
-    id: '6',
-    name: 'Iced Mocha',
-    description:
-      'Chocolate, espresso and milk served over ice.',
-    price: 5.8,
-    category: 'Cold Coffee',
-    image: IMAGES.icedMocha,
-  },
-
-  {
-    id: '7',
-    name: 'Cold Brew',
-    description:
-      'Slow brewed coffee with a smooth and refreshing taste.',
-    price: 5,
-    category: 'Cold Coffee',
-    image: IMAGES.coldBrew,
-  },
-
-  {
-    id: '8',
-    name: 'Mocha',
-    description:
-      'Delicious espresso combined with chocolate and milk.',
-    price: 5.5,
-    category: 'Special Coffee',
-    image: IMAGES.mocha,
-  },
-];
-
-/* =====================================================
-   REVIEWS
-===================================================== */
-
-const REVIEWS: Review[] = [
-  {
-    id: '1',
-    name: 'Sarah',
-    rating: 5,
-    text: 'Amazing coffee and a beautiful experience!',
-  },
-
-  {
-    id: '2',
-    name: 'Ahmed',
-    rating: 5,
-    text:
-      'The cappuccino is one of the best I have ever tried.',
-  },
-
-  {
-    id: '3',
-    name: 'Maya',
-    rating: 4,
-    text:
-      'Great taste, friendly service and lovely atmosphere.',
-  },
-];
+      {children}
+    </View>
+  );
+}
 
 /* =====================================================
    HOME SCREEN
@@ -191,66 +77,90 @@ function HomeScreen({
   addToCart,
 }: {
   coffees: Coffee[];
-  cart: Coffee[];
+  cart: CartItem[];
   addToCart: (coffee: Coffee) => void;
 }) {
   const navigation = useNavigation<any>();
 
-  const popularCoffees = coffees.slice(0, 4);
+  const {darkMode, toggleTheme} = useTheme();
 
-  const cartTotal = cart.reduce(
-    (total, coffee) => total + coffee.price,
+  const popularCoffees = coffees.slice(0, 4);
+  const cartCount = cart.reduce(
+    (total, item) => total + item.quantity,
     0,
   );
 
   return (
     <>
       <StatusBar
-        barStyle="dark-content"
-        backgroundColor="#F8F3ED"
+        barStyle={
+          darkMode
+            ? 'light-content'
+            : 'dark-content'
+        }
       />
 
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView
+        style={[
+          styles.safeArea,
+          darkMode && styles.darkBackground,
+        ]}>
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}>
+          contentContainerStyle={
+            styles.scrollContent
+          }>
 
           {/* HEADER */}
 
           <View style={styles.header}>
             <View>
-              <Text style={styles.logo}>B&B</Text>
+              <Text
+                style={[
+                  styles.logo,
+                  darkMode && styles.darkText,
+                ]}>
+                B&B
+              </Text>
 
               <Text style={styles.logoSubtitle}>
                 COFFEE SHOP
               </Text>
             </View>
 
-            <Pressable
-              style={styles.headerCart}
-              onPress={() =>
-                Alert.alert(
-                  'Shopping Cart',
-                  `${cart.length} item(s) • $${cartTotal.toFixed(
-                    2,
-                  )}`,
-                )
-              }>
+            <View style={styles.headerActions}>
+              <Pressable
+                style={styles.themeButton}
+                onPress={toggleTheme}>
+                <MaterialIcons
+                  name={
+                    darkMode
+                      ? 'light-mode'
+                      : 'dark-mode'
+                  }
+                  size={22}
+                  color="#4A2C20"
+                />
+              </Pressable>
 
-              <MaterialIcons
-                name="shopping-cart"
-                size={25}
-                color="#4A2C20"
-              />
+              <Pressable
+                style={styles.headerCart}
+                onPress={() => navigation.navigate('Cart')}>
+                <MaterialIcons
+                  name="shopping-cart"
+                  size={25}
+                  color="#4A2C20"
+                />
 
-              {cart.length > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>
-                    {cart.length}
-                  </Text>
-                </View>
-              )}
-            </Pressable>
+                {cart.length > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>
+                      {cartCount}
+                    </Text>
+                  </View>
+                )}
+              </Pressable>
+            </View>
           </View>
 
           {/* HERO */}
@@ -260,37 +170,40 @@ function HomeScreen({
               WELCOME TO
             </Text>
 
-            <Text style={styles.heroTitle}>
+            <Text
+              style={[
+                styles.heroTitle,
+                darkMode && styles.darkText,
+              ]}>
               B&B Coffee
             </Text>
 
-            <Text style={styles.heroSubtitle}>
+            <Text
+              style={[
+                styles.heroSubtitle,
+                darkMode && styles.darkSecondaryText,
+              ]}>
               Fresh Coffee.{'\n'}
               Better Moments.
             </Text>
 
-            <Text style={styles.description}>
-              Discover delicious coffee made with carefully
-              selected beans and served with passion.
+            <Text
+              style={[
+                styles.description,
+                darkMode && styles.darkMutedText,
+              ]}>
+              Discover delicious coffee made with
+              carefully selected beans and served with
+              passion.
             </Text>
 
-            <Pressable
-              style={styles.primaryButton}
+            <CustomButton
+              title="Explore Menu"
+              icon="arrow-forward"
               onPress={() =>
                 navigation.navigate('Menu')
-              }>
-
-              <Text style={styles.primaryButtonText}>
-                Explore Menu
-              </Text>
-
-              <MaterialIcons
-                name="arrow-forward"
-                size={19}
-                color="#FFFFFF"
-                style={styles.buttonIcon}
-              />
-            </Pressable>
+              }
+            />
           </View>
 
           {/* HERO IMAGE */}
@@ -302,76 +215,62 @@ function HomeScreen({
             />
           </View>
 
-          {/* POPULAR COFFEE */}
+          {/* POPULAR */}
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              Popular Coffee
-            </Text>
-
-            <Text style={styles.sectionSubtitle}>
-              Our customers' favorite choices
-            </Text>
-
-            {/* map() requirement */}
+          <Section
+            title="Popular Coffee"
+            subtitle="Our customers' favorite choices">
 
             <View style={styles.popularGrid}>
               {popularCoffees.map(coffee => (
-                <View
+                <CoffeeCard
                   key={coffee.id}
-                  style={styles.popularCard}>
-
-                  <Image
-                    source={coffee.image}
-                    style={styles.popularImage}
-                  />
-
-                  <Text style={styles.cardTitle}>
-                    {coffee.name}
-                  </Text>
-
-                  <Text style={styles.cardPrice}>
-                    ${coffee.price.toFixed(2)}
-                  </Text>
-
-                  <Pressable
-                    style={styles.smallAddButton}
-                    onPress={() =>
-                      addToCart(coffee)
-                    }>
-
-                    <MaterialIcons
-                      name="add"
-                      size={25}
-                      color="#FFFFFF"
-                    />
-                  </Pressable>
-                </View>
+                  coffee={coffee}
+                  onAdd={addToCart}
+                  compact
+                />
               ))}
             </View>
-          </View>
+          </Section>
 
           {/* ABOUT */}
 
-          <View style={styles.aboutSection}>
+          <View
+            style={[
+              styles.aboutSection,
+              darkMode &&
+                styles.darkAboutSection,
+            ]}>
             <Text style={styles.smallTitle}>
               OUR STORY
             </Text>
 
-            <Text style={styles.aboutTitle}>
+            <Text
+              style={[
+                styles.aboutTitle,
+                darkMode && styles.darkText,
+              ]}>
               More Than Just Coffee
             </Text>
 
-            <Text style={styles.aboutText}>
-              At B&B Coffee, we believe that coffee is not
-              just a drink. It is a moment to relax, connect
-              and enjoy.
+            <Text
+              style={[
+                styles.aboutText,
+                darkMode && styles.darkMutedText,
+              ]}>
+              At B&B Coffee, we believe that coffee is
+              not just a drink. It is a moment to relax,
+              connect and enjoy.
             </Text>
 
-            <Text style={styles.aboutText}>
-              We carefully select quality coffee beans and
-              prepare every cup with passion to give you the
-              perfect coffee experience.
+            <Text
+              style={[
+                styles.aboutText,
+                darkMode && styles.darkMutedText,
+              ]}>
+              We carefully select quality coffee beans
+              and prepare every cup with passion to give
+              you the perfect coffee experience.
             </Text>
 
             <View style={styles.founderBox}>
@@ -387,8 +286,8 @@ function HomeScreen({
                 </Text>
 
                 <Text style={styles.featureText}>
-                  Building better coffee moments, one cup
-                  at a time.
+                  Building better coffee moments, one
+                  cup at a time.
                 </Text>
               </View>
             </View>
@@ -396,11 +295,7 @@ function HomeScreen({
 
           {/* WHY B&B */}
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              Why B&B Coffee?
-            </Text>
-
+          <Section title="Why B&B Coffee?">
             {[
               {
                 icon: 'eco',
@@ -427,7 +322,8 @@ function HomeScreen({
                 key={feature.title}
                 style={styles.feature}>
 
-                <View style={styles.featureIconBox}>
+                <View
+                  style={styles.featureIconBox}>
                   <MaterialIcons
                     name={feature.icon as any}
                     size={27}
@@ -435,60 +331,64 @@ function HomeScreen({
                   />
                 </View>
 
-                <View style={styles.featureContent}>
-                  <Text style={styles.featureTitle}>
+                <View
+                  style={styles.featureContent}>
+                  <Text
+                    style={styles.featureTitle}>
                     {feature.title}
                   </Text>
 
-                  <Text style={styles.featureText}>
+                  <Text
+                    style={styles.featureText}>
                     {feature.text}
                   </Text>
                 </View>
               </View>
             ))}
-          </View>
+          </Section>
 
           {/* REVIEWS */}
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              Customer Reviews
-            </Text>
-
-            <Text style={styles.sectionSubtitle}>
-              What our customers say
-            </Text>
+          <Section
+            title="Customer Reviews"
+            subtitle="What our customers say">
 
             {REVIEWS.map(review => (
               <View
                 key={review.id}
                 style={styles.reviewCard}>
 
-                <View style={styles.reviewHeader}>
+                <View
+                  style={styles.reviewHeader}>
                   <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>
+                    <Text
+                      style={styles.avatarText}>
                       {review.name.charAt(0)}
                     </Text>
                   </View>
 
                   <View>
-                    <Text style={styles.reviewName}>
+                    <Text
+                      style={styles.reviewName}>
                       {review.name}
                     </Text>
 
-                    <View style={styles.starRow}>
-                      {[1, 2, 3, 4, 5].map(star => (
-                        <MaterialIcons
-                          key={`${review.id}-${star}`}
-                          name={
-                            star <= review.rating
-                              ? 'star'
-                              : 'star-border'
-                          }
-                          size={16}
-                          color="#9A6B4F"
-                        />
-                      ))}
+                    <View
+                      style={styles.starRow}>
+                      {[1, 2, 3, 4, 5].map(
+                        star => (
+                          <MaterialIcons
+                            key={`${review.id}-${star}`}
+                            name={
+                              star <= review.rating
+                                ? 'star'
+                                : 'star-border'
+                            }
+                            size={16}
+                            color="#9A6B4F"
+                          />
+                        ),
+                      )}
                     </View>
                   </View>
                 </View>
@@ -498,7 +398,7 @@ function HomeScreen({
                 </Text>
               </View>
             ))}
-          </View>
+          </Section>
 
           {/* CTA */}
 
@@ -511,22 +411,13 @@ function HomeScreen({
               Make every moment better with B&B Coffee.
             </Text>
 
-            <Pressable
-              style={styles.secondaryButton}
+            <CustomButton
+              title="Order Now"
+              icon="shopping-cart"
               onPress={() =>
                 navigation.navigate('Menu')
-              }>
-
-              <Text style={styles.secondaryButtonText}>
-                Order Now
-              </Text>
-
-              <MaterialIcons
-                name="shopping-cart"
-                size={19}
-                color="#4A2C20"
-              />
-            </Pressable>
+              }
+            />
           </View>
 
           {/* FOOTER */}
@@ -545,6 +436,98 @@ function HomeScreen({
             </Text>
           </View>
         </ScrollView>
+      </SafeAreaView>
+    </>
+  );
+}
+
+/* =====================================================
+   CART SCREEN
+===================================================== */
+
+function CartScreen({
+  cart,
+  increaseQuantity,
+  decreaseQuantity,
+  removeFromCart,
+}: {
+  cart: CartItem[];
+  increaseQuantity: (coffeeId: string) => void;
+  decreaseQuantity: (coffeeId: string) => void;
+  removeFromCart: (coffeeId: string) => void;
+}) {
+  const {darkMode} = useTheme();
+  const subtotal = cart.reduce(
+    (total, item) => total + item.price * item.quantity,
+    0,
+  );
+
+  return (
+    <>
+      <StatusBar
+        barStyle={darkMode ? 'light-content' : 'dark-content'}
+      />
+      <SafeAreaView
+        style={[styles.safeArea, darkMode && styles.darkBackground]}>
+        <FlatList
+          data={cart}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.cartContent}
+          ListHeaderComponent={
+            <View style={styles.cartHeader}>
+              <Text style={styles.smallTitle}>B&B CHECKOUT</Text>
+              <Text style={[styles.bigPageTitle, darkMode && styles.darkText]}>
+                Your Cart
+              </Text>
+              <Text style={[styles.pageSubtitle, darkMode && styles.darkMutedText]}>
+                Review your coffee order before paying.
+              </Text>
+            </View>
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyCart}>
+              <MaterialIcons name="shopping-cart" size={58} color="#9A6B4F" />
+              <Text style={styles.emptyCartTitle}>Your cart is empty</Text>
+              <Text style={styles.emptyCartText}>
+                Add a coffee from the Menu tab to get started.
+              </Text>
+            </View>
+          }
+          renderItem={({item}) => (
+            <CartListItem
+              item={item}
+              onIncrease={() => increaseQuantity(item.id)}
+              onDecrease={() => decreaseQuantity(item.id)}
+              onRemove={() => removeFromCart(item.id)}
+            />
+          )}
+          ListFooterComponent={
+            cart.length > 0 ? (
+              <View style={styles.summaryCard}>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Subtotal</Text>
+                  <Text style={styles.summaryValue}>${subtotal.toFixed(2)}</Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Delivery</Text>
+                  <Text style={styles.freeText}>FREE</Text>
+                </View>
+                <View style={styles.summaryDivider} />
+                <View style={styles.summaryRow}>
+                  <Text style={styles.totalLabel}>Total</Text>
+                  <Text style={styles.totalValue}>${subtotal.toFixed(2)}</Text>
+                </View>
+                <CustomButton
+                  title="Go to Pay"
+                  icon="payment"
+                  onPress={() =>
+                    Alert.alert('Payment', 'Payment flow is ready for your order.')
+                  }
+                />
+              </View>
+            ) : undefined
+          }
+        />
       </SafeAreaView>
     </>
   );
@@ -571,6 +554,8 @@ function AddCoffeeScreen({
 
   const [category, setCategory] =
     useState<Category>('Hot Coffee');
+
+  const {darkMode} = useTheme();
 
   const submitCoffee = () => {
     if (
@@ -621,11 +606,18 @@ function AddCoffeeScreen({
   return (
     <>
       <StatusBar
-        barStyle="dark-content"
-        backgroundColor="#F8F3ED"
+        barStyle={
+          darkMode
+            ? 'light-content'
+            : 'dark-content'
+        }
       />
 
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView
+        style={[
+          styles.safeArea,
+          darkMode && styles.darkBackground,
+        ]}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.formScroll}>
@@ -634,71 +626,54 @@ function AddCoffeeScreen({
             B&B COFFEE
           </Text>
 
-          <Text style={styles.bigPageTitle}>
+          <Text
+            style={[
+              styles.bigPageTitle,
+              darkMode && styles.darkText,
+            ]}>
             Add New Coffee
           </Text>
 
-          <Text style={styles.pageSubtitle}>
-            Create a new coffee and add it to your menu.
+          <Text
+            style={[
+              styles.pageSubtitle,
+              darkMode && styles.darkMutedText,
+            ]}>
+            Create a new coffee and add it to your
+            menu.
           </Text>
 
           <View style={styles.formCard}>
 
-            {/* NAME */}
-
-            <Text style={styles.inputLabel}>
-              Coffee Name
-            </Text>
-
-            <TextInput
-              style={styles.input}
+            <CustomInput
+              label="Coffee Name"
               placeholder="Example: Caramel Latte"
-              placeholderTextColor="#A09690"
               value={name}
               onChangeText={setName}
             />
 
-            {/* PRICE */}
-
-            <Text style={styles.inputLabel}>
-              Price
-            </Text>
-
-            <TextInput
-              style={styles.input}
+            <CustomInput
+              label="Price"
               placeholder="Example: 5.50"
-              placeholderTextColor="#A09690"
               keyboardType="decimal-pad"
               value={price}
               onChangeText={setPrice}
             />
 
-            {/* DESCRIPTION */}
-
-            <Text style={styles.inputLabel}>
-              Description
-            </Text>
-
-            <TextInput
-              style={[
-                styles.input,
-                styles.messageInput,
-              ]}
+            <CustomInput
+              label="Description"
               placeholder="Describe your coffee"
-              placeholderTextColor="#A09690"
-              multiline
-              textAlignVertical="top"
               value={description}
               onChangeText={setDescription}
+              multiline
             />
-
-            {/* CATEGORY */}
 
             <Text style={styles.inputLabel}>
               Category
             </Text>
 
-            <View style={styles.categoryButtons}>
+            <View
+              style={styles.categoryButtons}>
               {(
                 [
                   'Hot Coffee',
@@ -721,7 +696,6 @@ function AddCoffeeScreen({
                     style={
                       styles.categoryButtonContent
                     }>
-
                     <MaterialIcons
                       name={
                         item === 'Hot Coffee'
@@ -755,25 +729,12 @@ function AddCoffeeScreen({
               ))}
             </View>
 
-            {/* SUBMIT */}
-
-            <Pressable
-              style={styles.submitButton}
-              onPress={submitCoffee}>
-
-              <MaterialIcons
-                name="add-circle-outline"
-                size={22}
-                color="#FFFFFF"
-              />
-
-              <Text style={styles.submitButtonText}>
-                Add Coffee
-              </Text>
-            </Pressable>
+            <CustomButton
+              title="Add Coffee"
+              icon="add-circle-outline"
+              onPress={submitCoffee}
+            />
           </View>
-
-          {/* TIP */}
 
           <View style={styles.tipBox}>
             <MaterialIcons
@@ -808,9 +769,7 @@ function MenuScreen({
   coffees: Coffee[];
   addToCart: (coffee: Coffee) => void;
 }) {
-  /* =====================================================
-     SECTION LIST DATA
-  ===================================================== */
+  const {darkMode} = useTheme();
 
   const sections = useMemo(() => {
     const categories: Category[] = [
@@ -831,39 +790,41 @@ function MenuScreen({
       );
   }, [coffees]);
 
-  /* =====================================================
-     FLATLIST DATA
-  ===================================================== */
-
   const featured = coffees.slice(0, 5);
 
   return (
     <>
       <StatusBar
-        barStyle="dark-content"
-        backgroundColor="#F8F3ED"
+        barStyle={
+          darkMode
+            ? 'light-content'
+            : 'dark-content'
+        }
       />
 
-      <SafeAreaView style={styles.safeArea}>
-
+      <SafeAreaView
+        style={[
+          styles.safeArea,
+          darkMode && styles.darkBackground,
+        ]}>
         <SectionList
           sections={sections}
           keyExtractor={item => item.id}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.menuContent}
+          contentContainerStyle={
+            styles.menuContent
+          }
 
-          /* =================================================
-             SECTION HEADER
-          ================================================= */
-
-          renderSectionHeader={({section}) => (
+          renderSectionHeader={({
+            section,
+          }) => (
             <View style={styles.sectionHeader}>
-
               <MaterialIcons
                 name={
                   section.title === 'Hot Coffee'
                     ? 'local-cafe'
-                    : section.title === 'Cold Coffee'
+                    : section.title ===
+                      'Cold Coffee'
                     ? 'ac-unit'
                     : 'star'
                 }
@@ -872,85 +833,51 @@ function MenuScreen({
               />
 
               <Text
-                style={styles.sectionHeaderText}>
+                style={
+                  styles.sectionHeaderText
+                }>
                 {section.title}
               </Text>
             </View>
           )}
 
-          /* =================================================
-             SECTION ITEM
-          ================================================= */
-
           renderItem={({item}) => (
-            <View style={styles.menuCard}>
-
-              <Image
-                source={item.image}
-                style={styles.menuImage}
-              />
-
-              <View style={styles.menuInfo}>
-
-                <Text
-                  style={styles.menuItemName}>
-                  {item.name}
-                </Text>
-
-                <Text
-                  style={styles.menuDescription}>
-                  {item.description}
-                </Text>
-
-                <Text style={styles.menuPrice}>
-                  ${item.price.toFixed(2)}
-                </Text>
-              </View>
-
-              <Pressable
-                style={styles.menuAddButton}
-                onPress={() =>
-                  addToCart(item)
-                }>
-
-                <MaterialIcons
-                  name="add"
-                  size={29}
-                  color="#FFFFFF"
-                />
-              </Pressable>
-            </View>
+            <CoffeeCard
+              coffee={item}
+              onAdd={addToCart}
+            />
           )}
-
-          /* =================================================
-             HEADER
-          ================================================= */
 
           ListHeaderComponent={
             <View>
-
               <Text style={styles.smallTitle}>
                 B&B MENU
               </Text>
 
               <Text
-                style={styles.bigPageTitle}>
+                style={[
+                  styles.bigPageTitle,
+                  darkMode && styles.darkText,
+                ]}>
                 Our Coffee Collection
               </Text>
 
               <Text
-                style={styles.pageSubtitle}>
+                style={[
+                  styles.pageSubtitle,
+                  darkMode &&
+                    styles.darkMutedText,
+                ]}>
                 Explore our favorite coffee choices.
               </Text>
 
               <Text
-                style={styles.menuSectionTitle}>
+                style={[
+                  styles.menuSectionTitle,
+                  darkMode && styles.darkText,
+                ]}>
                 Featured Coffee
               </Text>
-
-              {/* =================================================
-                 FLATLIST
-              ================================================= */}
 
               <FlatList
                 data={featured}
@@ -964,19 +891,24 @@ function MenuScreen({
                 renderItem={({item}) => (
                   <View
                     style={styles.featuredCard}>
-
                     <Image
                       source={item.image}
-                      style={styles.featuredImage}
+                      style={
+                        styles.featuredImage
+                      }
                     />
 
                     <Text
-                      style={styles.featuredName}>
+                      style={
+                        styles.featuredName
+                      }>
                       {item.name}
                     </Text>
 
                     <Text
-                      style={styles.featuredPrice}>
+                      style={
+                        styles.featuredPrice
+                      }>
                       ${item.price.toFixed(2)}
                     </Text>
 
@@ -987,7 +919,6 @@ function MenuScreen({
                       onPress={() =>
                         addToCart(item)
                       }>
-
                       <Text
                         style={
                           styles.featuredButtonText
@@ -1006,19 +937,17 @@ function MenuScreen({
               />
 
               <Text
-                style={styles.menuSectionTitle}>
+                style={[
+                  styles.menuSectionTitle,
+                  darkMode && styles.darkText,
+                ]}>
                 Coffee Categories
               </Text>
             </View>
           }
 
-          /* =================================================
-             FOOTER
-          ================================================= */
-
           ListFooterComponent={
             <View style={styles.menuFooter}>
-
               <MaterialIcons
                 name="local-cafe"
                 size={42}
@@ -1052,15 +981,85 @@ function App() {
     useState<Coffee[]>([]);
 
   const [cart, setCart] =
-    useState<Coffee[]>([]);
+    useState<CartItem[]>([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [_apiError, setApiError] =
+    useState('');
 
   /* =====================================================
-     useEffect
+     useEffect + Axios GET
   ===================================================== */
 
   useEffect(() => {
-    const loadCoffeeMenu = () => {
-      setCoffees(INITIAL_COFFEES);
+    const loadCoffeeMenu = async () => {
+      try {
+        setLoading(true);
+        setApiError('');
+
+        const response =
+          await api.get('/hot');
+
+        const apiCoffees =
+          response.data;
+
+        const loadedCoffees: Coffee[] =
+          apiCoffees
+            .slice(0, 8)
+            .map(
+              (
+                item: any,
+                index: number,
+              ) => ({
+                id: `api-${item.id ?? index}`,
+
+                name:
+                  item.title ||
+                  `Coffee ${index + 1}`,
+
+                description:
+                  item.description ||
+                  'Delicious coffee prepared with care.',
+
+                price:
+                  3.5 + index * 0.5,
+
+                category: 'Hot Coffee',
+
+                image:
+                  INITIAL_COFFEES[
+                    index %
+                      INITIAL_COFFEES.length
+                  ].image,
+              }),
+            );
+
+        if (loadedCoffees.length > 0) {
+          setCoffees([
+            ...loadedCoffees,
+            ...INITIAL_COFFEES.filter(
+              coffee => coffee.category !== 'Hot Coffee',
+            ),
+          ]);
+        } else {
+          setCoffees(INITIAL_COFFEES);
+        }
+      } catch (error) {
+        console.log(
+          'Coffee API Error:',
+          error,
+        );
+
+        setApiError(
+          'Could not load coffee from API. Showing local menu.',
+        );
+
+        setCoffees(INITIAL_COFFEES);
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadCoffeeMenu();
@@ -1071,16 +1070,62 @@ function App() {
   ===================================================== */
 
   const addToCart = (coffee: Coffee) => {
-    setCart(previousCart => [
-      ...previousCart,
-      coffee,
-    ]);
+    setCart(previousCart => {
+      const existingItem = previousCart.find(
+        item => item.id === coffee.id,
+      );
+
+      if (existingItem) {
+        return previousCart.map(item =>
+          item.id === coffee.id
+            ? {...item, quantity: item.quantity + 1}
+            : item,
+        );
+      }
+
+      return [...previousCart, {...coffee, quantity: 1}];
+    });
 
     Alert.alert(
       'Added to Cart',
       `${coffee.name} has been added to your cart.`,
     );
   };
+
+  const increaseQuantity = (coffeeId: string) => {
+    setCart(previousCart =>
+      previousCart.map(item =>
+        item.id === coffeeId
+          ? {...item, quantity: item.quantity + 1}
+          : item,
+      ),
+    );
+  };
+
+  const decreaseQuantity = (coffeeId: string) => {
+    setCart(previousCart =>
+      previousCart.flatMap(item => {
+        if (item.id !== coffeeId) {
+          return [item];
+        }
+
+        return item.quantity > 1
+          ? [{...item, quantity: item.quantity - 1}]
+          : [];
+      }),
+    );
+  };
+
+  const removeFromCart = (coffeeId: string) => {
+    setCart(previousCart =>
+      previousCart.filter(item => item.id !== coffeeId),
+    );
+  };
+
+  const cartCount = cart.reduce(
+    (total, item) => total + item.quantity,
+    0,
+  );
 
   /* =====================================================
      ADD NEW COFFEE
@@ -1103,13 +1148,6 @@ function App() {
 
       category,
 
-      /*
-       * Local project image.
-       *
-       * New coffees use the local mocha image.
-       * You can later add a separate upload/image
-       * feature if required.
-       */
       image: IMAGES.mocha,
     };
 
@@ -1119,99 +1157,122 @@ function App() {
     ]);
   };
 
+  /* =====================================================
+     LOADING
+  ===================================================== */
+
+  if (loading) {
+    return <Loading />;
+  }
+
   return (
-    <NavigationContainer>
+    <ThemeProvider>
+      <NavigationContainer>
+        <Tab.Navigator
+          initialRouteName="Home"
+          screenOptions={{
+            headerShown: false,
 
-      <Tab.Navigator
-        initialRouteName="Home"
-        screenOptions={{
-          headerShown: false,
+            tabBarActiveTintColor: '#4A2C20',
 
-          tabBarActiveTintColor: '#4A2C20',
+            tabBarInactiveTintColor: '#A09690',
 
-          tabBarInactiveTintColor: '#A09690',
+            tabBarStyle: styles.tabBar,
 
-          tabBarStyle: styles.tabBar,
+            tabBarLabelStyle:
+              styles.tabLabel,
 
-          tabBarLabelStyle: styles.tabLabel,
-
-          tabBarHideOnKeyboard: true,
-        }}>
-
-        {/* =================================================
-           HOME TAB
-        ================================================= */}
-
-        <Tab.Screen
-          name="Home"
-          options={{
-            tabBarIcon: ({color}) => (
-              <MaterialIcons
-                name="home"
-                size={27}
-                color={color}
-              />
-            ),
+            tabBarHideOnKeyboard: true,
           }}>
 
-          {() => (
-            <HomeScreen
-              coffees={coffees}
-              cart={cart}
-              addToCart={addToCart}
-            />
-          )}
-        </Tab.Screen>
+          {/* HOME */}
 
-        {/* =================================================
-           ADD COFFEE TAB
-        ================================================= */}
-
-        <Tab.Screen
-          name="Add Coffee"
-          options={{
-            tabBarIcon: ({color}) => (
-              <MaterialIcons
-                name="add-circle-outline"
-                size={29}
-                color={color}
+          <Tab.Screen
+            name="Home"
+            options={{
+              tabBarIcon: ({color}) => (
+                <MaterialIcons
+                  name="home"
+                  size={27}
+                  color={color}
+                />
+              ),
+            }}>
+            {() => (
+              <HomeScreen
+                coffees={coffees}
+                cart={cart}
+                addToCart={addToCart}
               />
-            ),
-          }}>
+            )}
+          </Tab.Screen>
 
-          {() => (
-            <AddCoffeeScreen
-              addCoffee={addCoffee}
-            />
-          )}
-        </Tab.Screen>
+          {/* ADD COFFEE */}
 
-        {/* =================================================
-           MENU TAB
-        ================================================= */}
-
-        <Tab.Screen
-          name="Menu"
-          options={{
-            tabBarIcon: ({color}) => (
-              <MaterialIcons
-                name="local-cafe"
-                size={27}
-                color={color}
+          <Tab.Screen
+            name="Add Coffee"
+            options={{
+              tabBarIcon: ({color}) => (
+                <MaterialIcons
+                  name="add-circle-outline"
+                  size={29}
+                  color={color}
+                />
+              ),
+            }}>
+            {() => (
+              <AddCoffeeScreen
+                addCoffee={addCoffee}
               />
-            ),
-          }}>
+            )}
+          </Tab.Screen>
 
-          {() => (
-            <MenuScreen
-              coffees={coffees}
-              addToCart={addToCart}
-            />
-          )}
-        </Tab.Screen>
+          {/* MENU */}
 
-      </Tab.Navigator>
-    </NavigationContainer>
+          <Tab.Screen
+            name="Menu"
+            options={{
+              tabBarIcon: ({color}) => (
+                <MaterialIcons
+                  name="local-cafe"
+                  size={27}
+                  color={color}
+                />
+              ),
+            }}>
+            {() => (
+              <MenuScreen
+                coffees={coffees}
+                addToCart={addToCart}
+              />
+            )}
+          </Tab.Screen>
+
+          <Tab.Screen
+            name="Cart"
+            options={{
+              tabBarIcon: ({color}) => (
+                <MaterialIcons
+                  name="shopping-cart"
+                  size={27}
+                  color={color}
+                />
+              ),
+              tabBarBadge: cartCount > 0 ? cartCount : undefined,
+              tabBarBadgeStyle: styles.tabBadge,
+            }}>
+            {() => (
+              <CartScreen
+                cart={cart}
+                increaseQuantity={increaseQuantity}
+                decreaseQuantity={decreaseQuantity}
+                removeFromCart={removeFromCart}
+              />
+            )}
+          </Tab.Screen>
+        </Tab.Navigator>
+      </NavigationContainer>
+    </ThemeProvider>
   );
 }
 
@@ -1223,6 +1284,22 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#F8F3ED',
+  },
+
+  darkBackground: {
+    backgroundColor: '#211712',
+  },
+
+  darkText: {
+    color: '#FFFFFF',
+  },
+
+  darkSecondaryText: {
+    color: '#D8BBA5',
+  },
+
+  darkMutedText: {
+    color: '#C0B5AE',
   },
 
   scrollContent: {
@@ -1239,9 +1316,156 @@ const styles = StyleSheet.create({
     paddingBottom: 50,
   },
 
-  /* =====================================================
-     HEADER
-  ===================================================== */
+  cartContent: {
+    padding: 24,
+    paddingBottom: 45,
+  },
+
+  cartHeader: {
+    marginBottom: 12,
+  },
+
+  cartItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 12,
+    marginBottom: 12,
+  },
+
+  cartImage: {
+    width: 78,
+    height: 78,
+    borderRadius: 15,
+    resizeMode: 'cover',
+  },
+
+  cartItemInfo: {
+    flex: 1,
+    paddingHorizontal: 12,
+  },
+
+  cartItemName: {
+    color: '#4A2C20',
+    fontSize: 17,
+    fontWeight: '900',
+    marginBottom: 4,
+  },
+
+  cartItemPrice: {
+    color: '#9A6B4F',
+    fontSize: 14,
+    fontWeight: '800',
+    marginBottom: 8,
+  },
+
+  cartItemActions: {
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    alignSelf: 'stretch',
+  },
+
+  cartLineTotal: {
+    color: '#4A2C20',
+    fontSize: 15,
+    fontWeight: '900',
+  },
+
+  quantityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  quantityButton: {
+    width: 25,
+    height: 25,
+    borderRadius: 13,
+    backgroundColor: '#4A2C20',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  quantityText: {
+    minWidth: 27,
+    color: '#4A2C20',
+    fontSize: 15,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+
+  emptyCart: {
+    alignItems: 'center',
+    paddingVertical: 65,
+    paddingHorizontal: 25,
+  },
+
+  emptyCartTitle: {
+    color: '#4A2C20',
+    fontSize: 23,
+    fontWeight: '900',
+    marginTop: 15,
+    marginBottom: 8,
+  },
+
+  emptyCartText: {
+    color: '#77706B',
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+  },
+
+  summaryCard: {
+    backgroundColor: '#E8D8C8',
+    borderRadius: 22,
+    padding: 20,
+    marginTop: 10,
+  },
+
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
+  summaryLabel: {
+    color: '#6E5142',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+
+  summaryValue: {
+    color: '#4A2C20',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+
+  freeText: {
+    color: '#6C8B57',
+    fontSize: 15,
+    fontWeight: '900',
+  },
+
+  summaryDivider: {
+    borderTopWidth: 1,
+    borderTopColor: '#D4BEAB',
+    marginBottom: 15,
+  },
+
+  totalLabel: {
+    color: '#4A2C20',
+    fontSize: 19,
+    fontWeight: '900',
+  },
+
+  totalValue: {
+    color: '#4A2C20',
+    fontSize: 21,
+    fontWeight: '900',
+  },
+
+  /* HEADER */
 
   header: {
     flexDirection: 'row',
@@ -1250,6 +1474,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 18,
     paddingBottom: 15,
+  },
+
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
 
   logo: {
@@ -1263,6 +1493,15 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 2,
     color: '#9A6B4F',
+  },
+
+  themeButton: {
+    width: 45,
+    height: 45,
+    borderRadius: 23,
+    backgroundColor: '#E8D8C8',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   headerCart: {
@@ -1292,9 +1531,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
 
-  /* =====================================================
-     HERO
-  ===================================================== */
+  /* HERO */
 
   hero: {
     paddingHorizontal: 24,
@@ -1365,9 +1602,7 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
   },
 
-  /* =====================================================
-     GENERAL SECTIONS
-  ===================================================== */
+  /* SECTION */
 
   section: {
     paddingHorizontal: 24,
@@ -1387,9 +1622,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 
-  /* =====================================================
-     POPULAR
-  ===================================================== */
+  /* POPULAR */
 
   popularGrid: {
     flexDirection: 'row',
@@ -1438,9 +1671,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  /* =====================================================
-     ABOUT
-  ===================================================== */
+  /* ABOUT */
 
   aboutSection: {
     marginHorizontal: 24,
@@ -1448,6 +1679,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#E8D8C8',
     borderRadius: 28,
     padding: 25,
+  },
+
+  darkAboutSection: {
+    backgroundColor: '#3A2922',
   },
 
   aboutTitle: {
@@ -1474,9 +1709,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 
-  /* =====================================================
-     FEATURES
-  ===================================================== */
+  /* FEATURES */
 
   feature: {
     flexDirection: 'row',
@@ -1514,9 +1747,7 @@ const styles = StyleSheet.create({
     color: '#77706B',
   },
 
-  /* =====================================================
-     REVIEWS
-  ===================================================== */
+  /* REVIEWS */
 
   reviewCard: {
     backgroundColor: '#FFFFFF',
@@ -1566,9 +1797,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
 
-  /* =====================================================
-     CTA
-  ===================================================== */
+  /* CTA */
 
   cta: {
     marginHorizontal: 24,
@@ -1596,25 +1825,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 
-  secondaryButton: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 27,
-    paddingVertical: 13,
-    borderRadius: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-
-  secondaryButtonText: {
-    color: '#4A2C20',
-    fontSize: 16,
-    fontWeight: '900',
-  },
-
-  /* =====================================================
-     FOOTER
-  ===================================================== */
+  /* FOOTER */
 
   footer: {
     alignItems: 'center',
@@ -1640,9 +1851,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  /* =====================================================
-     FORM
-  ===================================================== */
+  /* FORM */
 
   bigPageTitle: {
     fontSize: 36,
@@ -1726,21 +1935,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 
-  submitButton: {
-    backgroundColor: '#4A2C20',
-    borderRadius: 27,
-    paddingVertical: 16,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
-  },
-
-  submitButtonText: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '900',
-  },
+  /* TIP */
 
   tipBox: {
     marginTop: 25,
@@ -1766,9 +1961,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  /* =====================================================
-     MENU
-  ===================================================== */
+  /* MENU */
 
   menuSectionTitle: {
     fontSize: 28,
@@ -1915,9 +2108,30 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  /* =====================================================
-     BOTTOM TABS
-  ===================================================== */
+  /* LOADING */
+
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 30,
+  },
+
+  loadingTitle: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#4A2C20',
+    marginTop: 18,
+    marginBottom: 8,
+  },
+
+  loadingText: {
+    fontSize: 14,
+    color: '#77706B',
+    textAlign: 'center',
+  },
+
+  /* TABS */
 
   tabBar: {
     height: 82,
@@ -1931,6 +2145,11 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 12,
     fontWeight: '800',
+  },
+
+  tabBadge: {
+    backgroundColor: '#9A6B4F',
+    color: '#FFFFFF',
   },
 });
 
