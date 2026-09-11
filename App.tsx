@@ -32,7 +32,8 @@ import {ThemeProvider} from './src/context/ThemeContext';
 import {IMAGES, INITIAL_COFFEES, REVIEWS} from './src/data/initialData';
 import {useTheme} from './src/hooks/useTheme';
 import api from './src/services/api';
-import type {CartItem, Category, Coffee} from './src/types';
+import {useCartStore} from './src/store/cartStore';
+import type {Category, Coffee} from './src/types';
 
 const Tab = createBottomTabNavigator();
 
@@ -67,22 +68,32 @@ function Section({
   );
 }
 
+function addCoffeeToCart(
+  coffee: Coffee,
+  addToCart: (coffee: Coffee) => void,
+) {
+  addToCart(coffee);
+  Alert.alert(
+    'Added to Cart',
+    `${coffee.name} has been added to your cart.`,
+  );
+}
+
 /* =====================================================
    HOME SCREEN
 ===================================================== */
 
 function HomeScreen({
   coffees,
-  cart,
-  addToCart,
 }: {
   coffees: Coffee[];
-  cart: CartItem[];
-  addToCart: (coffee: Coffee) => void;
 }) {
   const navigation = useNavigation<any>();
-
   const {darkMode, toggleTheme} = useTheme();
+  const cart = useCartStore(state => state.cart);
+  const addToCart = useCartStore(state => state.addToCart);
+  const handleAddToCart = (coffee: Coffee) =>
+    addCoffeeToCart(coffee, addToCart);
 
   const popularCoffees = coffees.slice(0, 4);
   const cartCount = cart.reduce(
@@ -226,7 +237,7 @@ function HomeScreen({
                 <CoffeeCard
                   key={coffee.id}
                   coffee={coffee}
-                  onAdd={addToCart}
+                  onAdd={handleAddToCart}
                   compact
                 />
               ))}
@@ -445,18 +456,13 @@ function HomeScreen({
    CART SCREEN
 ===================================================== */
 
-function CartScreen({
-  cart,
-  increaseQuantity,
-  decreaseQuantity,
-  removeFromCart,
-}: {
-  cart: CartItem[];
-  increaseQuantity: (coffeeId: string) => void;
-  decreaseQuantity: (coffeeId: string) => void;
-  removeFromCart: (coffeeId: string) => void;
-}) {
+function CartScreen() {
   const {darkMode} = useTheme();
+  const cart = useCartStore(state => state.cart);
+  const increaseQuantity = useCartStore(state => state.increaseQuantity);
+  const decreaseQuantity = useCartStore(state => state.decreaseQuantity);
+  const removeFromCart = useCartStore(state => state.removeFromCart);
+  const clearCart = useCartStore(state => state.clearCart);
   const subtotal = cart.reduce(
     (total, item) => total + item.price * item.quantity,
     0,
@@ -524,6 +530,13 @@ function CartScreen({
                     Alert.alert('Payment', 'Payment flow is ready for your order.')
                   }
                 />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear cart"
+                  style={styles.clearCartButton}
+                  onPress={clearCart}>
+                  <Text style={styles.clearCartText}>Clear Cart</Text>
+                </Pressable>
               </View>
             ) : undefined
           }
@@ -764,12 +777,13 @@ function AddCoffeeScreen({
 
 function MenuScreen({
   coffees,
-  addToCart,
 }: {
   coffees: Coffee[];
-  addToCart: (coffee: Coffee) => void;
 }) {
   const {darkMode} = useTheme();
+  const addToCart = useCartStore(state => state.addToCart);
+  const handleAddToCart = (coffee: Coffee) =>
+    addCoffeeToCart(coffee, addToCart);
 
   const sections = useMemo(() => {
     const categories: Category[] = [
@@ -844,7 +858,7 @@ function MenuScreen({
           renderItem={({item}) => (
             <CoffeeCard
               coffee={item}
-              onAdd={addToCart}
+              onAdd={handleAddToCart}
             />
           )}
 
@@ -917,7 +931,7 @@ function MenuScreen({
                         styles.featuredButton
                       }
                       onPress={() =>
-                        addToCart(item)
+                        handleAddToCart(item)
                       }>
                       <Text
                         style={
@@ -980,8 +994,8 @@ function App() {
   const [coffees, setCoffees] =
     useState<Coffee[]>([]);
 
-  const [cart, setCart] =
-    useState<CartItem[]>([]);
+  const cart = useCartStore(state => state.cart);
+  const hasHydrated = useCartStore(state => state.hasHydrated);
 
   const [loading, setLoading] =
     useState(true);
@@ -1069,59 +1083,6 @@ function App() {
      ADD TO CART
   ===================================================== */
 
-  const addToCart = (coffee: Coffee) => {
-    setCart(previousCart => {
-      const existingItem = previousCart.find(
-        item => item.id === coffee.id,
-      );
-
-      if (existingItem) {
-        return previousCart.map(item =>
-          item.id === coffee.id
-            ? {...item, quantity: item.quantity + 1}
-            : item,
-        );
-      }
-
-      return [...previousCart, {...coffee, quantity: 1}];
-    });
-
-    Alert.alert(
-      'Added to Cart',
-      `${coffee.name} has been added to your cart.`,
-    );
-  };
-
-  const increaseQuantity = (coffeeId: string) => {
-    setCart(previousCart =>
-      previousCart.map(item =>
-        item.id === coffeeId
-          ? {...item, quantity: item.quantity + 1}
-          : item,
-      ),
-    );
-  };
-
-  const decreaseQuantity = (coffeeId: string) => {
-    setCart(previousCart =>
-      previousCart.flatMap(item => {
-        if (item.id !== coffeeId) {
-          return [item];
-        }
-
-        return item.quantity > 1
-          ? [{...item, quantity: item.quantity - 1}]
-          : [];
-      }),
-    );
-  };
-
-  const removeFromCart = (coffeeId: string) => {
-    setCart(previousCart =>
-      previousCart.filter(item => item.id !== coffeeId),
-    );
-  };
-
   const cartCount = cart.reduce(
     (total, item) => total + item.quantity,
     0,
@@ -1161,7 +1122,7 @@ function App() {
      LOADING
   ===================================================== */
 
-  if (loading) {
+  if (loading || !hasHydrated) {
     return <Loading />;
   }
 
@@ -1201,8 +1162,6 @@ function App() {
             {() => (
               <HomeScreen
                 coffees={coffees}
-                cart={cart}
-                addToCart={addToCart}
               />
             )}
           </Tab.Screen>
@@ -1243,7 +1202,6 @@ function App() {
             {() => (
               <MenuScreen
                 coffees={coffees}
-                addToCart={addToCart}
               />
             )}
           </Tab.Screen>
@@ -1263,10 +1221,6 @@ function App() {
             }}>
             {() => (
               <CartScreen
-                cart={cart}
-                increaseQuantity={increaseQuantity}
-                decreaseQuantity={decreaseQuantity}
-                removeFromCart={removeFromCart}
               />
             )}
           </Tab.Screen>
@@ -1463,6 +1417,18 @@ const styles = StyleSheet.create({
     color: '#4A2C20',
     fontSize: 21,
     fontWeight: '900',
+  },
+
+  clearCartButton: {
+    alignItems: 'center',
+    marginTop: 16,
+    padding: 8,
+  },
+
+  clearCartText: {
+    color: '#9A6B4F',
+    fontSize: 14,
+    fontWeight: '800',
   },
 
   /* HEADER */
